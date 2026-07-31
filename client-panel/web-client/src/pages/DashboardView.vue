@@ -224,14 +224,14 @@ async function handleRestart() {
 }
 
 // Get protocol tag type
-function getProtocolTagType(protocol: Protocol): '' | 'success' | 'warning' | 'danger' | 'info' {
+function getProtocolTagType(protocol: Protocol): 'primary' | 'success' | 'warning' | 'danger' | 'info' | undefined {
   const typeMap: Record<Protocol, '' | 'success' | 'warning' | 'danger' | 'info'> = {
     tcp: '',
     udp: 'info',
     http: 'success',
     https: 'warning',
   }
-  return typeMap[protocol] || ''
+  return typeMap[protocol] || 'primary'
 }
 
 // Initialize

@@ -56,8 +56,8 @@
       </template>
 
       <template #actions="{ row }">
-        <el-button text type="primary" size="small" @click="handleDownload(row)">下载</el-button>
-        <el-button text type="warning" size="small" @click="handleRestore(row)">恢复</el-button>
+        <el-button text type="primary" size="small" @click="handleDownload(row as any)">下载</el-button>
+        <el-button text type="warning" size="small" @click="handleRestore(row as any)">恢复</el-button>
       </template>
     </DataTable>
 
@@ -135,7 +135,7 @@ const restoreLoading = ref(false)
 const backups = ref<Backup[]>([])
 const total = ref(0)
 const preflightVisible = ref(false)
-const preflightData = ref<BackupPreflightCheck | null>(null)
+const preflightData = ref<BackupPreflightCheck | undefined>(undefined)
 const selectedBackupId = ref<number | null>(null)
 
 const pagination = reactive({

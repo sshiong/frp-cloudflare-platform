@@ -60,11 +60,11 @@
       </template>
 
       <template #actions="{ row }">
-        <el-button text type="primary" size="small" @click="handleVerify(row)" :loading="row._verifying">
+        <el-button text type="primary" size="small" @click="handleVerify(row as any)" :loading="row._verifying">
           验证
         </el-button>
-        <el-button text type="info" size="small" @click="handleViewDns(row)">DNS记录</el-button>
-        <el-button text type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+        <el-button text type="info" size="small" @click="handleViewDns(row as any)">DNS记录</el-button>
+        <el-button text type="danger" size="small" @click="handleDelete(row as any)">删除</el-button>
       </template>
     </DataTable>
 

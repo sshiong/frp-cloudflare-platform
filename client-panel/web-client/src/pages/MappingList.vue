@@ -111,7 +111,7 @@
           <template #default="{ row }">
             <el-switch
               v-model="row.enabled"
-              @change="handleToggleEnabled(row)"
+              @change="handleToggleEnabled(row as any)"
             />
           </template>
         </el-table-column>
@@ -130,7 +130,7 @@
             <el-button text type="primary" size="small" @click="router.push(`/mappings/${row.id}/edit`)">
               编辑
             </el-button>
-            <el-button text type="danger" size="small" @click="handleDelete(row)">
+            <el-button text type="danger" size="small" @click="handleDelete(row as Mapping)">
               删除
             </el-button>
           </template>
@@ -278,14 +278,14 @@ async function handleBatchDelete() {
 }
 
 // Get protocol tag type
-function getProtocolTagType(protocol: Protocol): '' | 'success' | 'warning' | 'danger' | 'info' {
-  const typeMap: Record<Protocol, '' | 'success' | 'warning' | 'danger' | 'info'> = {
-    tcp: '',
+function getProtocolTagType(protocol: Protocol): 'primary' | 'success' | 'warning' | 'danger' | 'info' | undefined {
+  const typeMap: Record<Protocol, 'primary' | 'success' | 'warning' | 'danger' | 'info'> = {
+    tcp: 'primary',
     udp: 'info',
     http: 'success',
     https: 'warning',
   }
-  return typeMap[protocol] || ''
+  return typeMap[protocol] || 'primary'
 }
 
 // Initialize

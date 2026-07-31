@@ -131,7 +131,7 @@ export function getStatusLabel(status: MappingStatus | DomainStatus): string {
 /**
  * Get status type for Element Plus tag
  */
-export function getStatusType(status: MappingStatus | DomainStatus): 'success' | 'warning' | 'danger' | 'info' {
+export function getStatusType(status: MappingStatus | DomainStatus): 'primary' | 'success' | 'warning' | 'danger' | 'info' | undefined {
   const typeMap: Record<string, 'success' | 'warning' | 'danger' | 'info'> = {
     active: 'success',
     inactive: 'info',
@@ -159,7 +159,7 @@ export function getLogLevelLabel(level: LogLevel): string {
 /**
  * Get log level type for Element Plus tag
  */
-export function getLogLevelType(level: LogLevel): 'success' | 'warning' | 'danger' | 'info' | '' {
+export function getLogLevelType(level: LogLevel): 'primary' | 'success' | 'warning' | 'danger' | 'info' | undefined | '' {
   const typeMap: Record<LogLevel, 'success' | 'warning' | 'danger' | 'info' | ''> = {
     trace: 'info',
     debug: 'info',

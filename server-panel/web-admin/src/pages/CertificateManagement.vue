@@ -66,7 +66,7 @@
           text
           type="primary"
           size="small"
-          @click="handleRenew(row)"
+          @click="handleRenew(row as any)"
           :loading="row._renewing"
         >
           续签

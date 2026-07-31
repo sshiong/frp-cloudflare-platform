@@ -83,7 +83,7 @@
       </template>
 
       <template #actions="{ row }">
-        <el-button text type="danger" size="small" @click="handleRevoke(row)">撤销</el-button>
+        <el-button text type="danger" size="small" @click="handleRevoke(row as any)">撤销</el-button>
       </template>
     </DataTable>
   </div>

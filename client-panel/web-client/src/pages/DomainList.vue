@@ -181,7 +181,7 @@ async function handleRenewCert(domain: Domain) {
 }
 
 // Get SSL status type
-function getSslStatusType(status: string): '' | 'success' | 'warning' | 'danger' | 'info' {
+function getSslStatusType(status: string): 'primary' | 'success' | 'warning' | 'danger' | 'info' | undefined {
   const typeMap: Record<string, '' | 'success' | 'warning' | 'danger' | 'info'> = {
     active: 'success',
     pending: 'warning',

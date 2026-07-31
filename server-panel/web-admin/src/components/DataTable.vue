@@ -140,7 +140,7 @@ const emit = defineEmits<{
   (e: 'update:page', value: number): void
   (e: 'update:pageSize', value: number): void
   (e: 'selection-change', rows: any[]): void
-  (e: 'sort-change', sort: { prop: string; order: string }): void
+  (e: 'sort-change', sort: { column: any; prop: string | null; order: string | null }): void
   (e: 'row-click', row: any): void
   (e: 'page-change', page: number): void
   (e: 'size-change', size: number): void
@@ -161,7 +161,7 @@ function handleSelectionChange(rows: any[]) {
   emit('selection-change', rows)
 }
 
-function handleSortChange(sort: { prop: string; order: string }) {
+function handleSortChange(sort: { column: any; prop: string | null; order: string | null }) {
   emit('sort-change', sort)
 }
 

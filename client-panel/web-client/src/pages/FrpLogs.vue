@@ -165,7 +165,7 @@ function handleSearch() {
 }
 
 // Handle realtime toggle
-function handleRealtimeToggle(value: boolean) {
+function handleRealtimeToggle(value: string | number | boolean) {
   if (value) {
     startRealtimeUpdates()
   } else {

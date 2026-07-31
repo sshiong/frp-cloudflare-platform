@@ -80,7 +80,7 @@
           text
           type="warning"
           size="small"
-          @click="handleCancel(row)"
+          @click="handleCancel(row as Operation)"
         >
           取消
         </el-button>
@@ -89,7 +89,7 @@
           text
           type="primary"
           size="small"
-          @click="handleRetry(row)"
+          @click="handleRetry(row as Operation)"
         >
           重试
         </el-button>
@@ -98,7 +98,7 @@
           text
           type="danger"
           size="small"
-          @click="handleForceComplete(row)"
+          @click="handleForceComplete(row as Operation)"
         >
           强制完成
         </el-button>

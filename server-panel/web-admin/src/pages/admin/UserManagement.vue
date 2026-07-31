@@ -64,16 +64,16 @@
       </template>
 
       <template #actions="{ row }">
-        <el-button text type="primary" size="small" @click="openEditDialog(row)">编辑</el-button>
+        <el-button text type="primary" size="small" @click="openEditDialog(row as any)">编辑</el-button>
         <el-button
           text
           :type="row.status === 'active' ? 'warning' : 'success'"
           size="small"
-          @click="handleToggleStatus(row)"
+          @click="handleToggleStatus(row as any)"
         >
           {{ row.status === 'active' ? '禁用' : '启用' }}
         </el-button>
-        <el-button text type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+        <el-button text type="danger" size="small" @click="handleDelete(row as any)">删除</el-button>
       </template>
     </DataTable>
 

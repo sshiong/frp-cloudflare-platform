@@ -73,16 +73,16 @@
       </template>
 
       <template #actions="{ row }">
-        <el-button text type="primary" size="small" @click="openEditDialog(row)">编辑</el-button>
+        <el-button text type="primary" size="small" @click="openEditDialog(row as Mapping)">编辑</el-button>
         <el-button
           text
           :type="row.status === 'active' ? 'warning' : 'success'"
           size="small"
-          @click="handleToggleStatus(row)"
+          @click="handleToggleStatus(row as Mapping)"
         >
           {{ row.status === 'active' ? '禁用' : '启用' }}
         </el-button>
-        <el-button text type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+        <el-button text type="danger" size="small" @click="handleDelete(row as Mapping)">删除</el-button>
       </template>
     </DataTable>
 
@@ -193,14 +193,14 @@ const columns: TableColumn[] = [
   { prop: 'created_at', label: '创建时间', width: 160, slot: 'created_at' },
 ]
 
-function getProtocolTagType(protocol: string): string {
-  const map: Record<string, string> = {
-    tcp: '',
+function getProtocolTagType(protocol: string): 'primary' | 'success' | 'warning' | 'danger' | 'info' | undefined {
+  const map: Record<string, 'primary' | 'success' | 'warning' | 'danger' | 'info'> = {
+    tcp: 'primary',
     udp: 'warning',
     http: 'success',
-    https: 'primary',
+    https: 'info',
   }
-  return map[protocol] || ''
+  return map[protocol] || 'primary'
 }
 
 async function fetchMappings() {

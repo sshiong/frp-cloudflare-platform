@@ -7,7 +7,7 @@
 
 <script setup lang="ts">
 interface Props {
-  type: 'success' | 'warning' | 'danger' | 'info'
+  type: 'primary' | 'success' | 'warning' | 'danger' | 'info' | undefined
   label: string
   pulse?: boolean
 }
