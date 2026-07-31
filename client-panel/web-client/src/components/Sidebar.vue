@@ -51,10 +51,10 @@ import {
   Monitor,
   Connection,
   Plus,
-  Globe,
+  Compass,
   Document,
   Setting,
-  Server,
+  Platform,
 } from '@element-plus/icons-vue'
 import { useAppStore } from '@/stores/app'
 import { useFrpcStore } from '@/stores/frpc'
@@ -92,7 +92,7 @@ const menuItems = computed(() => [
   {
     path: '/domains',
     label: '域名管理',
-    icon: Globe,
+    icon: Compass,
   },
   {
     path: '/frpc/logs',
@@ -107,7 +107,7 @@ const menuItems = computed(() => [
   {
     path: '/server',
     label: '服务器配置',
-    icon: Server,
+    icon: Platform,
   },
 ])
 

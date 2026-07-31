@@ -22,7 +22,7 @@
       >
         <div class="domain-card__header">
           <div class="domain-card__domain">
-            <el-icon :size="20" color="#2563EB"><Globe /></el-icon>
+            <el-icon :size="20" color="#2563EB"><Compass /></el-icon>
             <span>{{ domain.domain }}</span>
           </div>
           <StatusBadge
@@ -101,7 +101,7 @@
 
       <!-- Empty State -->
       <div v-if="!loading && domains.length === 0" class="empty-state">
-        <el-icon class="empty-state__icon"><Globe /></el-icon>
+        <el-icon class="empty-state__icon"><Compass /></el-icon>
         <h3 class="empty-state__title">暂无域名</h3>
         <p class="empty-state__description">域名将在创建 HTTP/HTTPS 映射时自动添加</p>
       </div>
@@ -111,7 +111,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Globe, Refresh, Lock, RefreshRight } from '@element-plus/icons-vue'
+import { Compass, Refresh, Lock, RefreshRight } from '@element-plus/icons-vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import * as domainsApi from '@/api/domains'
 import { useNotification } from '@/composables/useNotification'

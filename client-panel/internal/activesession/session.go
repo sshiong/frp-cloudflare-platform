@@ -137,7 +137,6 @@ func (m *Manager) ValidateSession(cookieSecret string) (*Session, error) {
 
 	// 检查过期
 	if time.Now().After(m.activeSession.ExpiresAt) {
-		session := m.activeSession
 		m.activeSession = nil
 		return nil, fmt.Errorf("SESSION_EXPIRED: 会话已过期")
 	}
