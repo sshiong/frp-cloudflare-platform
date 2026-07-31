@@ -2,10 +2,8 @@ package main
 
 import (
 	"context"
-	"crypto/ed25519"
 	"flag"
 	"fmt"
-	"log/slog"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -159,8 +157,9 @@ func main() {
 		}
 	}
 
-	// 初始化 Server API 客户器
+	// 初始化 Server API 客户端
 	serverClient := serverclient.NewClient(install.NormalizedServerURL, deviceSigner, logger)
+	_ = serverClient // 在后续同步和心跳中使用
 
 	// 初始化 FRPC 管理器
 	frpcBinaryPath := filepath.Join(dataDir, "frpc", FRPCBinaryName)

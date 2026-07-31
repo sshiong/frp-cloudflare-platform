@@ -36,7 +36,7 @@ type FRPCController interface {
 	// Reload 重载配置（代理变更）
 	Reload() error
 	// Restart 重启进程（Server/Auth/TLS 变更）
-	Restart() error
+	Restart(ctx context.Context, configPath string) error
 	// Status 获取状态
 	Status() (string, error)
 	// Stop 停止进程
@@ -204,12 +204,13 @@ func (a *Applier) applySingle(task *applyTask) *ApplyResult {
 	result.Action = action
 
 	// 7. 执行 reload 或 restart
+	configPath := filepath.Join(a.currentDir, "frpc.toml")
 	var applyErr error
 	switch action {
 	case ActionReload:
 		applyErr = a.frpcCtrl.Reload()
 	case ActionRestart:
-		applyErr = a.frpcCtrl.Restart()
+		applyErr = a.frpcCtrl.Restart(task.ctx, configPath)
 	}
 
 	if applyErr != nil {
@@ -223,7 +224,7 @@ func (a *Applier) applySingle(task *applyTask) *ApplyResult {
 			result.RollbackDone = true
 			// 尝试恢复旧配置
 			if action == ActionRestart {
-				a.frpcCtrl.Restart()
+				a.frpcCtrl.Restart(task.ctx, configPath)
 			} else {
 				a.frpcCtrl.Reload()
 			}

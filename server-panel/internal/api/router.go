@@ -3,10 +3,13 @@
 package api
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
@@ -17,6 +20,7 @@ import (
 	"github.com/frp-panel/server-panel/internal/certificates"
 	"github.com/frp-panel/server-panel/internal/cloudflare"
 	"github.com/frp-panel/server-panel/internal/configsync"
+	"github.com/frp-panel/server-panel/internal/crypto"
 	"github.com/frp-panel/server-panel/internal/devices"
 	"github.com/frp-panel/server-panel/internal/domains"
 	"github.com/frp-panel/server-panel/internal/frpauth"
@@ -172,7 +176,7 @@ func NewRouter(deps Deps) *chi.Mux {
 				r.Post("/{id}/force-complete", handleForceCompleteOperation(deps.Ops))
 			})
 
-			// 客户端配置（设备专用端点）
+			// 客户端配置
 			r.Route("/client", func(r chi.Router) {
 				r.Get("/bootstrap", handleClientBootstrap(deps.ConfigSync))
 				r.Get("/config", handleClientConfig(deps.ConfigSync))
@@ -342,7 +346,6 @@ func handleLogout(sessMgr *session.Manager) http.HandlerFunc {
 
 func handleReauth(sessMgr *session.Manager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// 续期当前会话
 		sessionID := sessMgr.GetSessionIDFromRequest(r)
 		if sessionID == "" {
 			writeError(w, http.StatusUnauthorized, "no session")
@@ -353,7 +356,6 @@ func handleReauth(sessMgr *session.Manager) http.HandlerFunc {
 			writeError(w, http.StatusUnauthorized, "invalid session")
 			return
 		}
-		// 重新创建会话
 		newSess, err := sessMgr.Create(r.Context(), sess.UserID, sess.ClientID, r.RemoteAddr, r.UserAgent())
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "failed to renew session")
@@ -402,10 +404,6 @@ func handleGetCSRF(authn *auth.Authenticator) http.HandlerFunc {
 func handleListOperations(ops *operations.Manager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := auth.GetUserIDFromContext(r.Context())
-		role := auth.GetUserRoleFromContext(r.Context())
-		if role == "admin" {
-			userID = "" // 管理员看所有
-		}
 		limit := 20
 		offset := 0
 		if l := r.URL.Query().Get("limit"); l != "" {
@@ -414,17 +412,12 @@ func handleListOperations(ops *operations.Manager) http.HandlerFunc {
 		if o := r.URL.Query().Get("offset"); o != "" {
 			fmt.Sscanf(o, "%d", &offset)
 		}
-		if userID != "" {
-			opsResult, total, err := ops.ListByUser(r.Context(), userID, limit, offset)
-			if err != nil {
-				writeError(w, http.StatusInternalServerError, "failed to list operations")
-				return
-			}
-			writeJSON(w, http.StatusOK, map[string]interface{}{"operations": opsResult, "total": total})
-		} else {
-			// 管理员查看所有操作（简化实现，使用 SQL 查询）
-			writeJSON(w, http.StatusOK, map[string]interface{}{"operations": []interface{}{}, "total": 0})
+		opsResult, total, err := ops.ListByUser(r.Context(), userID, limit, offset)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to list operations")
+			return
 		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{"operations": opsResult, "total": total})
 	}
 }
 
@@ -515,10 +508,10 @@ func handleClientConfig(sync *configsync.Syncer) http.HandlerFunc {
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"version":    snap.Version,
-			"config":     snap.Config,
-			"hash":       snap.Hash,
-			"signature":  snap.Signature,
+			"version":   snap.Version,
+			"config":    snap.Config,
+			"hash":      snap.Hash,
+			"signature": snap.Signature,
 		})
 	}
 }
@@ -548,7 +541,6 @@ func handleClientStatus(w http.ResponseWriter, r *http.Request) {
 
 func handleClientEvents(hub *websocket.Hub) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// WebSocket 升级由外部处理
 		writeJSON(w, http.StatusUpgradeRequired, map[string]string{"error": "websocket upgrade required"})
 	}
 }
@@ -652,11 +644,3 @@ func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, map[string]string{"error": msg})
 }
-
-// 引入需要的包
-var (
-	_ = context.Background
-	_ = crypto.RandomToken
-	_ = fmt.Sscanf
-	_ = time.Now
-)
