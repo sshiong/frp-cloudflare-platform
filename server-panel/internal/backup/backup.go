@@ -184,10 +184,10 @@ func (m *Manager) ListBackups() ([]BackupResult, error) {
 }
 
 // backupToTmp 使用 SQLite Backup API 备份数据库。
-func (m *Manager) backupToTmp(destPath string) {
+func (m *Manager) backupToTmp(destPath string) error {
 	// SQLite backup 需要通过附加数据库实现
 	// 简单方案: 复制文件（生产环境应使用 sqlite3_backup API）
-	copyFile(m.dbPath, destPath)
+	return copyFile(m.dbPath, destPath)
 }
 
 // encryptFile 使用 age scrypt 加密文件。

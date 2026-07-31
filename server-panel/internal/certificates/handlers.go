@@ -9,7 +9,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"encoding/pem"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"time"

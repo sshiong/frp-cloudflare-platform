@@ -3,6 +3,7 @@
 package devices
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"log/slog"
@@ -260,10 +261,10 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 // getByID 通过 ID 获取设备。
-func (h *Handler) getByID(ctx sqlQueryContext, id string) (*Device, error) {
+func (h *Handler) getByID(ctx context.Context, id string) (*Device, error) {
 	var d Device
 	var enabled int
-	err := ctx.QueryRow(`
+	err := h.db.QueryRowContext(ctx, `
 		SELECT id, user_id, name, platform, public_key, enabled, bound_at, COALESCE(last_seen, '')
 		FROM devices WHERE id = ?
 	`, id).Scan(&d.ID, &d.UserID, &d.Name, &d.Platform, &d.PublicKey, &enabled, &d.BoundAt, &d.LastSeen)
@@ -275,10 +276,6 @@ func (h *Handler) getByID(ctx sqlQueryContext, id string) (*Device, error) {
 	}
 	d.Enabled = enabled == 1
 	return &d, nil
-}
-
-type sqlQueryContext interface {
-	QueryRow(query string, args ...interface{}) *sql.Row
 }
 
 func writeJSON(w http.ResponseWriter, status int, v interface{}) {

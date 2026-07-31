@@ -4,6 +4,7 @@ package cloudflare
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -457,9 +458,9 @@ func (h *Handler) DeleteDNSRecord(w http.ResponseWriter, r *http.Request) {
 }
 
 // getActiveToken 获取并解密用户的 active Cloudflare token。
-func (h *Handler) getActiveToken(ctx interface{ QueryRow(string, ...interface{}) *sql.Row }, userID string) (string, error) {
+func (h *Handler) getActiveToken(ctx context.Context, userID string) (string, error) {
 	var encToken string
-	err := ctx.QueryRow(`
+	err := h.db.QueryRowContext(ctx, `
 		SELECT token_enc FROM cf_tokens WHERE user_id = ? AND status = 'active' LIMIT 1
 	`, userID).Scan(&encToken)
 	if err != nil {
@@ -469,9 +470,9 @@ func (h *Handler) getActiveToken(ctx interface{ QueryRow(string, ...interface{})
 }
 
 // getDecryptedToken 获取并解密指定的 token。
-func (h *Handler) getDecryptedToken(ctx interface{ QueryRow(string, ...interface{}) *sql.Row }, id, userID string) (string, error) {
+func (h *Handler) getDecryptedToken(ctx context.Context, id, userID string) (string, error) {
 	var encToken string
-	err := ctx.QueryRow(`
+	err := h.db.QueryRowContext(ctx, `
 		SELECT token_enc FROM cf_tokens WHERE id = ? AND user_id = ?
 	`, id, userID).Scan(&encToken)
 	if err != nil {
@@ -513,7 +514,7 @@ func (h *Handler) verifyTokenWithCF(token string) (*cfVerifyResponse, error) {
 		if len(cfResp.Errors) > 0 {
 			msg = cfResp.Errors[0].Message
 		}
-		return nil, fmt.Errorf(msg)
+		return nil, fmt.Errorf("%s", msg)
 	}
 
 	// 获取 token 权限
@@ -523,7 +524,7 @@ func (h *Handler) verifyTokenWithCF(token string) (*cfVerifyResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer permResp.Close()
+	defer permResp.Body.Close()
 
 	return &cfVerifyResponse{
 		Permissions: []string{"zone:read", "dns:edit"},

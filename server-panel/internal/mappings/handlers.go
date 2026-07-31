@@ -3,6 +3,7 @@
 package mappings
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/frp-panel/server-panel/internal/audit"
 	"github.com/frp-panel/server-panel/internal/auth"
-	"github.com/frp-panel/server-panel/internal/crypto"
 	"github.com/google/uuid"
 )
 
@@ -383,10 +383,10 @@ func (h *Handler) ForceDelete(w http.ResponseWriter, r *http.Request) {
 }
 
 // getByID 获取映射。
-func (h *Handler) getByID(ctx sqlCtx, id string) (*Mapping, error) {
+func (h *Handler) getByID(ctx context.Context, id string) (*Mapping, error) {
 	var m Mapping
 	var enabled int
-	err := ctx.QueryRow(`
+	err := h.db.QueryRowContext(ctx, `
 		SELECT id, user_id, COALESCE(device_id,''), name, protocol, local_ip, local_port,
 		COALESCE(remote_port,0), COALESCE(custom_domain,''), COALESCE(proxy_name,''),
 		config_version, enabled, status, created_at, updated_at
@@ -403,15 +403,11 @@ func (h *Handler) getByID(ctx sqlCtx, id string) (*Mapping, error) {
 	return &m, nil
 }
 
-type sqlCtx interface {
-	QueryRow(query string, args ...interface{}) *sql.Row
-}
-
 // allocatePort 自动分配可用端口。
 // 从 10000 开始查找未被占用的端口。
-func (h *Handler) allocatePort(ctx sqlCtx2, userID string) (int, error) {
+func (h *Handler) allocatePort(ctx context.Context, userID string) (int, error) {
 	// 查找所有已分配的端口
-	rows, err := ctx.Query("SELECT port FROM port_leases ORDER BY port")
+	rows, err := h.db.QueryContext(ctx, "SELECT port FROM port_leases ORDER BY port")
 	if err != nil {
 		return 0, err
 	}
@@ -433,10 +429,6 @@ func (h *Handler) allocatePort(ctx sqlCtx2, userID string) (int, error) {
 		}
 	}
 	return 0, fmt.Errorf("no available ports")
-}
-
-type sqlCtx2 interface {
-	Query(query string, args ...interface{}) (*sql.Rows, error)
 }
 
 func nullString(s string) interface{} {

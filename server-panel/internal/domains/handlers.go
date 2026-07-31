@@ -3,6 +3,7 @@
 package domains
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"log/slog"
@@ -437,10 +438,10 @@ func (h *Handler) GetDNS(w http.ResponseWriter, r *http.Request) {
 }
 
 // getByID 获取域名。
-func (h *Handler) getByID(ctx interface{ QueryRow(string, ...interface{}) *sql.Row }, id string) (*Domain, error) {
+func (h *Handler) getByID(ctx context.Context, id string) (*Domain, error) {
 	var d Domain
 	var cfProxy int
-	err := ctx.QueryRow(`
+	err := h.db.QueryRowContext(ctx, `
 		SELECT id, user_id, fqdn, display_name, COALESCE(zone_id,''),
 		cloudflare_proxy, COALESCE(server_ip,''), ssl_mode, status, created_at, updated_at
 		FROM domains WHERE id = ?
