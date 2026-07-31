@@ -1,0 +1,30 @@
+# FRP Panel 定时任务配置
+# 放置在 /etc/cron.d/frp-panel
+
+# 环境变量
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+# 每天凌晨 2 点执行备份
+0 2 * * * frp-panel /opt/frp-panel/scripts/backup.sh >> /var/log/frp-panel/backup.log 2>&1
+
+# 每小时检查证书续期
+0 * * * * frp-panel /opt/frp-panel/scripts/check-certificates.sh >> /var/log/frp-panel/certificates.log 2>&1
+
+# 每 5 分钟检查服务健康
+*/5 * * * * frp-panel /opt/frp-panel/scripts/healthcheck.sh >> /var/log/frp-panel/healthcheck.log 2>&1
+
+# 每天凌晨 3 点清理旧日志
+0 3 * * * frp-panel find /var/log/frp-panel -name "*.log" -mtime +30 -delete
+
+# 每天凌晨 4 点清理旧审计日志
+0 4 * * * frp-panel sqlite3 /data/frp-panel.db "DELETE FROM audit_logs WHERE created_at < datetime('now', '-90 days');"
+
+# 每周日凌晨 5 点清理旧任务记录
+0 5 * * 0 frp-panel sqlite3 /data/frp-panel.db "DELETE FROM jobs WHERE status = 'completed' AND completed_at < datetime('now', '-30 days');"
+
+# 每月 1 日凌晨 6 点执行数据库优化
+0 6 1 * * frp-panel sqlite3 /data/frp-panel.db "VACUUM; ANALYZE;"
+
+# 每天检查更新
+0 8 * * * frp-panel /opt/frp-panel/scripts/check-updates.sh >> /var/log/frp-panel/updates.log 2>&1

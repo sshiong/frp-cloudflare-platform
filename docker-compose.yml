@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # Server Panel - Control Plane
+  server-control:
+    build:
+      context: ./server-panel
+      dockerfile: Dockerfile
+      args:
+        TARGET: control
+    container_name: frp-panel-control
+    restart: unless-stopped
+    ports:
+      - "9000:9000"  # Control API (internal only, expose via reverse proxy)
+    volumes:
+      - server-data:/data
+      - server-secrets:/run/secrets
+      - router-snapshots:/var/lib/frp-panel/router
+    environment:
+      - FRP_PANEL_MODE=control
+      - FRP_PANEL_PORT=9000
+      - FRP_PANEL_DB_PATH=/data/frp-panel.db
+      - FRP_PANEL_LOG_LEVEL=info
+    networks:
+      - frp-panel
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9000/api/v1/instance"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Server Panel - Router (Public HTTP/HTTPS entry)
+  server-router:
+    build:
+      context: ./server-panel
+      dockerfile: Dockerfile
+      args:
+        TARGET: router
+    container_name: frp-panel-router
+    restart: unless-stopped
+    ports:
+      - "80:80"    # HTTP
+      - "443:443"  # HTTPS
+    volumes:
+      - router-snapshots:/var/lib/frp-panel/router:ro
+      - server-data:/data:ro
+    networks:
+      - frp-panel
+    depends_on:
+      - server-control
+
+  # FRPS (FRP Server)
+  frps:
+    image: snowdreamtech/frps:latest
+    container_name: frp-panel-frps
+    restart: unless-stopped
+    ports:
+      - "7000:7000"  # FRP bind port
+    volumes:
+      - ./frps.toml:/etc/frp/frps.toml:ro
+    networks:
+      - frp-panel
+
+volumes:
+  server-data:
+    driver: local
+  server-secrets:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+  router-snapshots:
+    driver: local
+
+networks:
+  frp-panel:
+    driver: bridge

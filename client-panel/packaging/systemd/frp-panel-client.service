@@ -1,0 +1,40 @@
+[Unit]
+Description=FRP Panel Client
+Documentation=https://github.com/sshiong/frp-cloudflare-platform
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=frp-panel
+Group=frp-panel
+ExecStart=/usr/local/bin/frp-panel-client
+Restart=on-failure
+RestartSec=5
+StartLimitInterval=60
+StartLimitBurst=3
+
+# Security hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/frp-client-panel /var/log/frp-client-panel
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+# Resource limits
+LimitNOFILE=65536
+
+# Environment
+Environment=FRP_CLIENT_PANEL_PORT=7410
+Environment=FRP_CLIENT_PANEL_DB_PATH=/var/lib/frp-client-panel/client.db
+Environment=FRP_CLIENT_PANEL_LOG_LEVEL=info
+
+[Install]
+WantedBy=multi-user.target

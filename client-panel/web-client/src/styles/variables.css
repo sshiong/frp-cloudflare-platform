@@ -1,0 +1,138 @@
+:root {
+  /* Primary Colors - Professional Dark Theme */
+  --el-color-primary: #2563EB;
+  --el-color-primary-light-3: #5B8DEF;
+  --el-color-primary-light-5: #7BA5F5;
+  --el-color-primary-light-7: #A0BFFA;
+  --el-color-primary-light-8: #B5CFFC;
+  --el-color-primary-light-9: #DBEAFE;
+  --el-color-primary-dark-2: #1D4ED8;
+
+  /* Success Colors */
+  --el-color-success: #16A34A;
+  --el-color-success-light-3: #4ADE80;
+  --el-color-success-light-5: #86EFAC;
+  --el-color-success-light-7: #BBF7D0;
+  --el-color-success-light-8: #D1FAE5;
+  --el-color-success-light-9: #ECFDF5;
+  --el-color-success-dark-2: #15803D;
+
+  /* Warning Colors */
+  --el-color-warning: #EAB308;
+  --el-color-warning-light-3: #FDE047;
+  --el-color-warning-light-5: #FEF08A;
+  --el-color-warning-light-7: #FEF9C3;
+  --el-color-warning-light-8: #FEFCE8;
+  --el-color-warning-light-9: #FFFBEB;
+  --el-color-warning-dark-2: #CA8A04;
+
+  /* Error/Danger Colors */
+  --el-color-danger: #DC2626;
+  --el-color-danger-light-3: #F87171;
+  --el-color-danger-light-5: #FCA5A5;
+  --el-color-danger-light-7: #FECACA;
+  --el-color-danger-light-8: #FEE2E2;
+  --el-color-danger-light-9: #FEF2F2;
+  --el-color-danger-dark-2: #B91C1C;
+
+  /* Info Colors */
+  --el-color-info: #18181B;
+  --el-color-info-light-3: #52525B;
+  --el-color-info-light-5: #71717A;
+  --el-color-info-light-7: #A1A1AA;
+  --el-color-info-light-8: #D4D4D8;
+  --el-color-info-light-9: #F4F4F5;
+
+  /* Background Colors */
+  --el-bg-color: #FFFFFF;
+  --el-bg-color-page: #F4F4F5;
+  --el-bg-color-overlay: #FFFFFF;
+
+  /* Text Colors */
+  --el-text-color-primary: #18181B;
+  --el-text-color-regular: #3F3F46;
+  --el-text-color-secondary: #71717A;
+  --el-text-color-placeholder: #A1A1AA;
+  --el-text-color-disabled: #D4D4D8;
+
+  /* Border Colors */
+  --el-border-color: #E4E4E7;
+  --el-border-color-light: #F4F4F5;
+  --el-border-color-lighter: #F4F4F5;
+  --el-border-color-extra-light: #FAFAFA;
+  --el-border-color-dark: #D4D4D8;
+
+  /* Fill Colors */
+  --el-fill-color: #F4F4F5;
+  --el-fill-color-light: #FAFAFA;
+  --el-fill-color-lighter: #FAFAFA;
+  --el-fill-color-extra-light: #FCFCFC;
+  --el-fill-color-dark: #E4E4E7;
+  --el-fill-color-blank: #FFFFFF;
+
+  /* Border Radius */
+  --el-border-radius-base: 6px;
+  --el-border-radius-small: 4px;
+  --el-border-radius-round: 20px;
+  --el-border-radius-circle: 100%;
+
+  /* Font Sizes */
+  --el-font-size-extra-large: 20px;
+  --el-font-size-large: 16px;
+  --el-font-size-base: 14px;
+  --el-font-size-small: 12px;
+  --el-font-size-extra-small: 10px;
+
+  /* Box Shadow */
+  --el-box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --el-box-shadow-light: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --el-box-shadow-lighter: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --el-box-shadow-dark: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+
+  /* Custom Colors for FRP Client */
+  --color-primary: #2563EB;
+  --color-primary-hover: #1D4ED8;
+  --color-primary-light: #DBEAFE;
+  --color-success: #16A34A;
+  --color-success-light: #ECFDF5;
+  --color-warning: #EAB308;
+  --color-warning-light: #FFFBEB;
+  --color-error: #DC2626;
+  --color-error-light: #FEF2F2;
+  --color-bg: #FFFFFF;
+  --color-bg-secondary: #F4F4F5;
+  --color-bg-tertiary: #FAFAFA;
+  --color-text: #18181B;
+  --color-text-secondary: #71717A;
+  --color-text-muted: #A1A1AA;
+  --color-border: #E4E4E7;
+  --color-border-light: #F4F4F5;
+
+  /* Sidebar Colors */
+  --sidebar-bg: #FFFFFF;
+  --sidebar-width: 240px;
+  --sidebar-collapsed-width: 64px;
+  --sidebar-item-hover: #F4F4F5;
+  --sidebar-item-active: #DBEAFE;
+  --sidebar-item-active-text: #2563EB;
+
+  /* Header Colors */
+  --header-bg: #FFFFFF;
+  --header-height: 56px;
+  --header-border: #E4E4E7;
+
+  /* Status Colors */
+  --status-connected: #16A34A;
+  --status-disconnected: #DC2626;
+  --status-warning: #EAB308;
+  --status-info: #2563EB;
+
+  /* Card Colors */
+  --card-bg: #FFFFFF;
+  --card-border: #E4E4E7;
+  --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+
+  /* Transition */
+  --transition-duration: 0.2s;
+  --transition-timing: ease-in-out;
+}

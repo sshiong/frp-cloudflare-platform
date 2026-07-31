@@ -1,0 +1,149 @@
+:root {
+  /* Primary Colors - Professional Dark Scheme */
+  --color-primary: #2563EB;
+  --color-primary-light: #3B82F6;
+  --color-primary-dark: #1D4ED8;
+  --color-primary-bg: #EFF6FF;
+
+  /* Semantic Colors */
+  --color-success: #16A34A;
+  --color-success-light: #22C55E;
+  --color-success-bg: #F0FDF4;
+  --color-warning: #EAB308;
+  --color-warning-light: #FACC15;
+  --color-warning-bg: #FEFCE8;
+  --color-error: #DC2626;
+  --color-error-light: #EF4444;
+  --color-error-bg: #FEF2F2;
+  --color-info: #2563EB;
+  --color-info-light: #3B82F6;
+  --color-info-bg: #EFF6FF;
+
+  /* Neutral Colors */
+  --color-text-primary: #18181B;
+  --color-text-secondary: #71717A;
+  --color-text-placeholder: #A1A1AA;
+  --color-text-disabled: #D4D4D8;
+  --color-bg-primary: #FFFFFF;
+  --color-bg-secondary: #F4F4F5;
+  --color-bg-tertiary: #E4E4E7;
+  --color-border: #E4E4E7;
+  --color-border-light: #F4F4F5;
+  --color-border-dark: #D4D4D8;
+
+  /* Sidebar Colors */
+  --sidebar-bg: #18181B;
+  --sidebar-text: #A1A1AA;
+  --sidebar-text-active: #FFFFFF;
+  --sidebar-hover: #27272A;
+  --sidebar-active: #2563EB;
+  --sidebar-width: 240px;
+  --sidebar-collapsed-width: 64px;
+
+  /* Header */
+  --header-height: 56px;
+  --header-bg: #FFFFFF;
+  --header-border: #E4E4E7;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+  --transition-slow: 0.35s ease;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+
+  /* Font */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
+}
+
+/* Element Plus Theme Overrides */
+:root {
+  --el-color-primary: #2563EB;
+  --el-color-primary-light-3: #60A5FA;
+  --el-color-primary-light-5: #93C5FD;
+  --el-color-primary-light-7: #BFDBFE;
+  --el-color-primary-light-8: #DBEAFE;
+  --el-color-primary-light-9: #EFF6FF;
+  --el-color-primary-dark-2: #1D4ED8;
+
+  --el-color-success: #16A34A;
+  --el-color-success-light-3: #4ADE80;
+  --el-color-success-light-5: #86EFAC;
+  --el-color-success-light-7: #BBF7D0;
+  --el-color-success-light-8: #DCFCE7;
+  --el-color-success-light-9: #F0FDF4;
+  --el-color-success-dark-2: #15803D;
+
+  --el-color-warning: #EAB308;
+  --el-color-warning-light-3: #FDE047;
+  --el-color-warning-light-5: #FDE68A;
+  --el-color-warning-light-7: #FEF3C7;
+  --el-color-warning-light-8: #FEF9C3;
+  --el-color-warning-light-9: #FEFCE8;
+  --el-color-warning-dark-2: #CA8A04;
+
+  --el-color-danger: #DC2626;
+  --el-color-danger-light-3: #F87171;
+  --el-color-danger-light-5: #FCA5A5;
+  --el-color-danger-light-7: #FECACA;
+  --el-color-danger-light-8: #FEE2E2;
+  --el-color-danger-light-9: #FEF2F2;
+  --el-color-danger-dark-2: #B91C1C;
+
+  --el-color-info: #71717A;
+  --el-color-info-light-3: #A1A1AA;
+  --el-color-info-light-5: #D4D4D8;
+  --el-color-info-light-7: #E4E4E7;
+  --el-color-info-light-8: #F4F4F5;
+  --el-color-info-light-9: #FAFAFA;
+
+  --el-bg-color: #FFFFFF;
+  --el-bg-color-page: #F4F4F5;
+  --el-bg-color-overlay: #FFFFFF;
+
+  --el-text-color-primary: #18181B;
+  --el-text-color-regular: #3F3F46;
+  --el-text-color-secondary: #71717A;
+  --el-text-color-placeholder: #A1A1AA;
+  --el-text-color-disabled: #D4D4D8;
+
+  --el-border-color: #E4E4E7;
+  --el-border-color-light: #F4F4F5;
+  --el-border-color-lighter: #F4F4F5;
+  --el-border-color-extra-light: #FAFAFA;
+  --el-border-color-dark: #D4D4D8;
+
+  --el-fill-color: #F4F4F5;
+  --el-fill-color-light: #FAFAFA;
+  --el-fill-color-lighter: #FAFAFA;
+  --el-fill-color-extra-light: #FAFAFA;
+  --el-fill-color-dark: #E4E4E7;
+  --el-fill-color-blank: #FFFFFF;
+
+  --el-mask-color: rgba(24, 24, 27, 0.8);
+  --el-mask-color-extra-light: rgba(24, 24, 27, 0.3);
+
+  --el-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --el-font-size-base: 14px;
+  --el-border-radius-base: 6px;
+  --el-border-radius-small: 4px;
+  --el-border-radius-round: 20px;
+}

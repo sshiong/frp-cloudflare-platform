@@ -1,0 +1,47 @@
+[Unit]
+Description=FRP Panel Server - Router (HTTP/HTTPS Entry)
+Documentation=https://github.com/sshiong/frp-cloudflare-platform
+After=network.target frp-panel-control.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=frp-panel
+Group=frp-panel
+ExecStart=/usr/local/bin/frp-panel-server-router router
+Restart=on-failure
+RestartSec=5
+StartLimitInterval=60
+StartLimitBurst=3
+
+# Needs port 80 and 443
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+# Security hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadOnlyPaths=/var/lib/frp-panel/router
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RestrictRealtime=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+# Resource limits
+LimitNOFILE=65536
+
+# Environment
+Environment=FRP_PANEL_MODE=router
+Environment=FRP_PANEL_ROUTER_SNAPSHOT_DIR=/var/lib/frp-panel/router/snapshots
+Environment=FRP_PANEL_ROUTER_CERT_DIR=/var/lib/frp-panel/router/certificates
+
+[Install]
+WantedBy=multi-user.target

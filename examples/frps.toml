@@ -1,0 +1,39 @@
+# FRPS 配置示例
+# 由 FRP Panel 自动生成和管理
+
+[common]
+# 服务器绑定地址
+bind_addr = 0.0.0.0
+
+# 服务器绑定端口 (FRPC 连接端口)
+bind_port = 7000
+
+# 虚拟主机 HTTP 端口 (仅监听 localhost)
+vhost_http_port = 8080
+
+# 虚拟主机 HTTPS 端口 (不用于用户域名证书)
+# vhost_https_port = 0
+
+# 仪表盘 (默认关闭)
+# dashboard_addr = 127.0.0.1
+# dashboard_port = 7500
+# dashboard_user = admin
+# dashboard_pwd =
+
+# 认证 Token (由 FRP Panel 管理，请勿手动修改)
+token = __AUTO_GENERATED__
+
+# 最大连接池数
+max_pool_count = 10
+
+# HTTP 插件 (FRP Panel 认证钩子)
+[plugin.frp-panel]
+addr = 127.0.0.1:9001
+path = /internal/frp
+ops = Login,NewProxy,NewWorkConn,NewUserConn,CloseProxy,Ping
+
+# 日志配置
+log_way = file
+log_level = info
+log_max_days = 7
+log_file = /var/log/frp-panel/frps.log

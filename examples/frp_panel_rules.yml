@@ -1,0 +1,121 @@
+# Prometheus 告警规则
+groups:
+  - name: frp_panel_alerts
+    rules:
+      # 服务可用性
+      - alert: FRPPanelDown
+        expr: up{job="frp-panel-server"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "FRP Panel Server 不可用"
+          description: "FRP Panel Server 已停止响应超过 1 分钟"
+
+      - alert: FRPPanelRouterDown
+        expr: up{job="frp-panel-router"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "FRP Panel Router 不可用"
+          description: "FRP Panel Router 已停止响应超过 1 分钟"
+
+      - alert: FRPSDown
+        expr: up{job="frps"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "FRPS 不可用"
+          description: "FRPS 已停止响应超过 1 分钟"
+
+      # 在线客户端数
+      - alert: LowOnlineClients
+        expr: frp_panel_online_clients < 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "在线客户端数过低"
+          description: "当前在线客户端数为 {{ $value }}，可能存在问题"
+
+      # 错误率
+      - alert: HighErrorRate
+        expr: rate(frp_panel_http_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "HTTP 5xx 错误率过高"
+          description: "5xx 错误率超过 10%，当前值 {{ $value }}"
+
+      # 响应时间
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(frp_panel_http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API 响应时间过高"
+          description: "95% 响应时间超过 1 秒，当前值 {{ $value }}s"
+
+      # 数据库大小
+      - alert: DatabaseSizeHigh
+        expr: frp_panel_database_size_bytes > 1073741824  # 1GB
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "数据库文件过大"
+          description: "数据库文件大小超过 1GB，当前值 {{ $value | humanize }}"
+
+      # WAL 大小
+      - alert: WALSizeHigh
+        expr: frp_panel_wal_size_bytes > 104857600  # 100MB
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "WAL 文件过大"
+          description: "WAL 文件大小超过 100MB，当前值 {{ $value | humanize }}"
+
+      # 后台任务积压
+      - alert: JobBacklogHigh
+        expr: frp_panel_jobs_pending > 100
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "后台任务积压过多"
+          description: "待处理任务数超过 100，当前值 {{ $value }}"
+
+      # 磁盘空间
+      - alert: DiskSpaceLow
+        expr: node_filesystem_avail_bytes{mountpoint="/data"} / node_filesystem_size_bytes{mountpoint="/data"} < 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "磁盘空间不足"
+          description: "数据分区剩余空间不足 10%"
+
+      # 内存使用
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes{job="frp-panel-server"} > 536870912  # 512MB
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "内存使用过高"
+          description: "FRP Panel Server 内存使用超过 512MB"
+
+      # SQLite 忙等待
+      - alert: SQLiteBusyHigh
+        expr: rate(frp_panel_sqlite_busy_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "SQLite 忙等待次数过多"
+          description: "SQLite 忙等待次数超过 10 次/秒"

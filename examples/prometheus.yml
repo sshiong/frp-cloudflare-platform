@@ -1,0 +1,39 @@
+# Prometheus 监控配置示例
+# 用于监控 FRP Panel 运行状态
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# 告警规则
+rule_files:
+  - "frp_panel_rules.yml"
+
+# 监控目标
+scrape_configs:
+  # FRP Panel Server
+  - job_name: 'frp-panel-server'
+    static_configs:
+      - targets: ['localhost:9000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # FRP Panel Router
+  - job_name: 'frp-panel-router'
+    static_configs:
+      - targets: ['localhost:80']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # FRPS
+  - job_name: 'frps'
+    static_configs:
+      - targets: ['localhost:7500']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Node Exporter (系统监控)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['localhost:9100']
+    scrape_interval: 30s

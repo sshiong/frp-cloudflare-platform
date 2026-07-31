@@ -1,0 +1,73 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+server-panel/bin/
+client-panel/bin/
+
+# Test binary
+*.test
+
+# Output of go coverage
+*.out
+
+# Go workspace
+go.work
+go.work.sum
+
+# Dependency directories
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+dist/
+.nuxt/
+.next/
+.output/
+*.local
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Database files
+*.db
+*.db-wal
+*.db-shm
+
+# Build artifacts
+build/
+release/
+
+# Temporary files
+tmp/
+temp/
+
+# Certificate files (generated)
+*.pem
+*.key
+*.crt
+*.p12
+
+# Backup files
+*.bak
+*.backup
+*.frppanel-backup
