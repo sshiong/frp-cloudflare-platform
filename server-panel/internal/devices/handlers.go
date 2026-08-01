@@ -3,11 +3,11 @@
 package devices
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/frp-panel/server-panel/internal/audit"
 	"github.com/frp-panel/server-panel/internal/auth"
@@ -29,192 +29,96 @@ func NewHandler(db *sql.DB, logger *slog.Logger, auditLog *audit.Logger) *Handle
 
 // Device 设备实体。
 type Device struct {
-	ID        string `json:"id"`
-	UserID    string `json:"user_id"`
-	Name      string `json:"name"`
-	Platform  string `json:"platform"`
-	PublicKey string `json:"public_key"`
-	Enabled   bool   `json:"enabled"`
-	BoundAt   string `json:"bound_at"`
-	LastSeen  string `json:"last_seen,omitempty"`
+	ID                string `json:"id"`
+	UserID            string `json:"user_id"`
+	Name              string `json:"name"`
+	Status            string `json:"status"`
+	ClientPanelVersion string `json:"client_panel_version,omitempty"`
+	FrpcVersion       string `json:"frpc_version,omitempty"`
+	LastSeenAt        string `json:"last_seen_at,omitempty"`
+	RegisteredAt      string `json:"registered_at"`
 }
 
 // RegisterRequest 设备注册请求。
 type RegisterRequest struct {
-	Name      string `json:"name"`
-	Platform  string `json:"platform"`
-	PublicKey string `json:"public_key"` // Ed25519 公钥（hex 编码）
+	Name                 string `json:"name"`
+	InstallationInstanceID string `json:"installation_instance_id"`
+	ClientPanelVersion   string `json:"client_panel_version"`
+	FrpcVersion          string `json:"frpc_version"`
 }
 
 // Register 设备首次注册（绑定到当前用户）。
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserIDFromContext(r.Context())
+	if userID == "" {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
 	var req RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.PublicKey == "" {
-		writeError(w, http.StatusBadRequest, "public_key is required")
-		return
+
+	if req.Name == "" {
+		req.Name = "Unnamed Device"
+	}
+	if req.InstallationInstanceID == "" {
+		req.InstallationInstanceID = uuid.New().String()
 	}
 
-	userID := auth.GetUserIDFromContext(r.Context())
-
-	// 生成设备 token 和 ID
-	deviceID := uuid.New().String()
-	deviceToken := crypto.RandomToken(32)
-	tokenHash := crypto.HMACSHA256Hex([]byte(deviceToken), []byte(deviceID))
+	id := uuid.New().String()
+	now := time.Now().UTC().Format(time.RFC3339)
 
 	_, err := h.db.ExecContext(r.Context(), `
-		INSERT INTO devices (id, user_id, name, platform, public_key, token_hash)
-		VALUES (?, ?, ?, ?, ?, ?)
-	`, deviceID, userID, req.Name, req.Platform, req.PublicKey, tokenHash)
+		INSERT INTO clients (id, server_instance_id, owner_user_id, installation_instance_id, name, status, client_panel_version, frpc_version, registered_at)
+		VALUES (?, 'default', ?, ?, ?, 'bound', ?, ?, ?)
+	`, id, userID, req.InstallationInstanceID, req.Name, req.ClientPanelVersion, req.FrpcVersion, now)
 	if err != nil {
 		h.logger.Error("failed to register device", "err", err)
 		writeError(w, http.StatusInternalServerError, "failed to register device")
 		return
 	}
 
+	// 生成设备凭证
+	deviceToken := crypto.RandomToken(32)
+	frpDeviceToken := crypto.RandomToken(32)
+
 	h.audit.Log(r.Context(), audit.Entry{
-		RequestID:  auth.GetRequestIDFromContext(r.Context()),
-		UserID:     userID,
-		Action:     "device.register",
+		RequestID: auth.GetRequestIDFromContext(r.Context()),
+		UserID:    userID,
+		Action:    "device.register",
 		TargetType: "device",
-		TargetID:   deviceID,
-		Detail:     map[string]interface{}{"name": req.Name, "platform": req.Platform},
-		IP:         r.RemoteAddr,
+		TargetID:   id,
+		IP:        r.RemoteAddr,
 	})
-
-	// 返回设备 token（仅此一次，后续不可获取）
-	writeJSON(w, http.StatusCreated, map[string]interface{}{
-		"id":           deviceID,
-		"device_token": deviceToken,
-	})
-}
-
-// GetCurrent 获取当前设备信息（设备 API）。
-func (h *Handler) GetCurrent(w http.ResponseWriter, r *http.Request) {
-	deviceID := auth.GetDeviceIDFromContext(r.Context())
-	if deviceID == "" {
-		writeError(w, http.StatusUnauthorized, "device authentication required")
-		return
-	}
-
-	device, err := h.getByID(r.Context(), deviceID)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to get device")
-		return
-	}
-	if device == nil {
-		writeError(w, http.StatusNotFound, "device not found")
-		return
-	}
-
-	writeJSON(w, http.StatusOK, device)
-}
-
-// RotateToken 轮换设备 Token。
-func (h *Handler) RotateToken(w http.ResponseWriter, r *http.Request) {
-	deviceID := r.URL.Query().Get("id")
-	if deviceID == "" {
-		deviceID = auth.GetDeviceIDFromContext(r.Context())
-	}
-	if deviceID == "" {
-		writeError(w, http.StatusBadRequest, "device id is required")
-		return
-	}
-
-	userID := auth.GetUserIDFromContext(r.Context())
-
-	// 验证设备属于当前用户
-	var ownerID string
-	if err := h.db.QueryRowContext(r.Context(), "SELECT user_id FROM devices WHERE id = ?", deviceID).Scan(&ownerID); err != nil {
-		writeError(w, http.StatusNotFound, "device not found")
-		return
-	}
-	if ownerID != userID {
-		role := auth.GetUserRoleFromContext(r.Context())
-		if role != "admin" {
-			writeError(w, http.StatusForbidden, "access denied")
-			return
-		}
-	}
-
-	// 生成新 token
-	newToken := crypto.RandomToken(32)
-	newHash := crypto.HMACSHA256Hex([]byte(newToken), []byte(deviceID))
-
-	_, err := h.db.ExecContext(r.Context(), `
-		UPDATE devices SET token_hash = ? WHERE id = ?
-	`, newHash, deviceID)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to rotate token")
-		return
-	}
-
-	h.audit.LogSimple(r.Context(), auth.GetRequestIDFromContext(r.Context()),
-		userID, "device.rotate_token", "device", deviceID, r.RemoteAddr)
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"id":           deviceID,
-		"device_token": newToken,
+		"device_id":        id,
+		"device_token":     deviceToken,
+		"frp_device_token": frpDeviceToken,
 	})
 }
 
-// Unbind 解绑设备。
-func (h *Handler) Unbind(w http.ResponseWriter, r *http.Request) {
-	deviceID := r.URL.Query().Get("id")
-	if deviceID == "" {
-		writeError(w, http.StatusBadRequest, "device id is required")
-		return
-	}
-
-	userID := auth.GetUserIDFromContext(r.Context())
-	role := auth.GetUserRoleFromContext(r.Context())
-
-	// 验证权限
-	var ownerID string
-	if err := h.db.QueryRowContext(r.Context(), "SELECT user_id FROM devices WHERE id = ?", deviceID).Scan(&ownerID); err != nil {
-		writeError(w, http.StatusNotFound, "device not found")
-		return
-	}
-	if ownerID != userID && role != "admin" {
-		writeError(w, http.StatusForbidden, "access denied")
-		return
-	}
-
-	// 清除关联的映射
-	_, _ = h.db.ExecContext(r.Context(), "UPDATE mappings SET device_id = NULL WHERE device_id = ?", deviceID)
-
-	// 删除设备
-	_, err := h.db.ExecContext(r.Context(), "DELETE FROM devices WHERE id = ?", deviceID)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to unbind device")
-		return
-	}
-
-	h.audit.LogSimple(r.Context(), auth.GetRequestIDFromContext(r.Context()),
-		userID, "device.unbind", "device", deviceID, r.RemoteAddr)
-
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
-}
-
-// List 列出设备（管理员可看全部，普通用户看自己的）。
+// List 获取设备列表。
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserIDFromContext(r.Context())
 	role := auth.GetUserRoleFromContext(r.Context())
 
-	query := "SELECT id, user_id, name, platform, public_key, enabled, bound_at, COALESCE(last_seen, '') FROM devices"
+	query := `SELECT id, owner_user_id, name, status, COALESCE(client_panel_version,''), COALESCE(frpc_version,''),
+		COALESCE(last_seen_at,''), registered_at FROM clients`
 	var args []interface{}
 
 	if role != "admin" {
-		query += " WHERE user_id = ?"
+		query += " WHERE owner_user_id = ?"
 		args = append(args, userID)
 	}
-	query += " ORDER BY bound_at DESC"
+	query += " ORDER BY registered_at DESC"
 
 	rows, err := h.db.QueryContext(r.Context(), query, args...)
 	if err != nil {
+		h.logger.Error("failed to list devices", "err", err)
 		writeError(w, http.StatusInternalServerError, "failed to list devices")
 		return
 	}
@@ -223,61 +127,123 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	var devices []Device
 	for rows.Next() {
 		var d Device
-		var enabled int
-		if err := rows.Scan(&d.ID, &d.UserID, &d.Name, &d.Platform, &d.PublicKey, &enabled, &d.BoundAt, &d.LastSeen); err != nil {
+		if err := rows.Scan(&d.ID, &d.UserID, &d.Name, &d.Status, &d.ClientPanelVersion, &d.FrpcVersion, &d.LastSeenAt, &d.RegisteredAt); err != nil {
+			h.logger.Error("failed to scan device", "err", err)
 			writeError(w, http.StatusInternalServerError, "failed to scan device")
 			return
 		}
-		d.Enabled = enabled == 1
 		devices = append(devices, d)
 	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{"devices": devices})
+}
+
+// GetCurrent 获取当前设备信息。
+func (h *Handler) GetCurrent(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserIDFromContext(r.Context())
+
+	var d Device
+	err := h.db.QueryRowContext(r.Context(), `
+		SELECT id, owner_user_id, name, status, COALESCE(client_panel_version,''), COALESCE(frpc_version,''),
+		COALESCE(last_seen_at,''), registered_at FROM clients WHERE owner_user_id = ? LIMIT 1
+	`, userID).Scan(&d.ID, &d.UserID, &d.Name, &d.Status, &d.ClientPanelVersion, &d.FrpcVersion, &d.LastSeenAt, &d.RegisteredAt)
+
+	if err == sql.ErrNoRows {
+		writeJSON(w, http.StatusOK, map[string]interface{}{"device": nil})
+		return
+	}
+	if err != nil {
+		h.logger.Error("failed to get device", "err", err)
+		writeError(w, http.StatusInternalServerError, "failed to get device")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"device": d})
+}
+
+// RotateToken 轮换设备 Token。
+func (h *Handler) RotateToken(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserIDFromContext(r.Context())
+
+	newToken := crypto.RandomToken(32)
+	newFrpToken := crypto.RandomToken(32)
+
+	h.audit.Log(r.Context(), audit.Entry{
+		RequestID: auth.GetRequestIDFromContext(r.Context()),
+		UserID:    userID,
+		Action:    "device.rotate_token",
+		TargetType: "device",
+		IP:        r.RemoteAddr,
+	})
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"device_token":     newToken,
+		"frp_device_token": newFrpToken,
+	})
+}
+
+// Unbind 解绑设备。
+func (h *Handler) Unbind(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserIDFromContext(r.Context())
+
+	result, err := h.db.ExecContext(r.Context(), `
+		UPDATE clients SET status = 'unbound', unbound_at = datetime('now') WHERE owner_user_id = ? AND status = 'bound'
+	`, userID)
+	if err != nil {
+		h.logger.Error("failed to unbind device", "err", err)
+		writeError(w, http.StatusInternalServerError, "failed to unbind device")
+		return
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		writeError(w, http.StatusNotFound, "no bound device found")
+		return
+	}
+
+	h.audit.Log(r.Context(), audit.Entry{
+		RequestID: auth.GetRequestIDFromContext(r.Context()),
+		UserID:    userID,
+		Action:    "device.unbind",
+		TargetType: "device",
+		IP:        r.RemoteAddr,
+	})
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "unbound"})
 }
 
 // Delete 删除设备（管理员）。
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	deviceID := r.URL.Query().Get("id")
 	if deviceID == "" {
-		writeError(w, http.StatusBadRequest, "id is required")
+		writeError(w, http.StatusBadRequest, "device id required")
 		return
 	}
 
-	_, _ = h.db.ExecContext(r.Context(), "UPDATE mappings SET device_id = NULL WHERE device_id = ?", deviceID)
-	result, err := h.db.ExecContext(r.Context(), "DELETE FROM devices WHERE id = ?", deviceID)
+	result, err := h.db.ExecContext(r.Context(), "DELETE FROM clients WHERE id = ?", deviceID)
 	if err != nil {
+		h.logger.Error("failed to delete device", "err", err)
 		writeError(w, http.StatusInternalServerError, "failed to delete device")
 		return
 	}
-	n, _ := result.RowsAffected()
-	if n == 0 {
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
 		writeError(w, http.StatusNotFound, "device not found")
 		return
 	}
 
-	h.audit.LogSimple(r.Context(), auth.GetRequestIDFromContext(r.Context()),
-		auth.GetUserIDFromContext(r.Context()), "device.delete", "device", deviceID, r.RemoteAddr)
+	h.audit.Log(r.Context(), audit.Entry{
+		RequestID: auth.GetRequestIDFromContext(r.Context()),
+		UserID:    auth.GetUserIDFromContext(r.Context()),
+		Action:    "device.delete",
+		TargetType: "device",
+		TargetID:   deviceID,
+		IP:        r.RemoteAddr,
+	})
 
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
-// getByID 通过 ID 获取设备。
-func (h *Handler) getByID(ctx context.Context, id string) (*Device, error) {
-	var d Device
-	var enabled int
-	err := h.db.QueryRowContext(ctx, `
-		SELECT id, user_id, name, platform, public_key, enabled, bound_at, COALESCE(last_seen, '')
-		FROM devices WHERE id = ?
-	`, id).Scan(&d.ID, &d.UserID, &d.Name, &d.Platform, &d.PublicKey, &enabled, &d.BoundAt, &d.LastSeen)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	d.Enabled = enabled == 1
-	return &d, nil
-}
-
+// 辅助函数
 func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
