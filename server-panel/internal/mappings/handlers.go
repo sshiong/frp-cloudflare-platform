@@ -118,10 +118,36 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := uuid.New().String()
+	clientID := req.DeviceID
+	if clientID == "" {
+		// 查找用户的第一个客户端
+		var existingClientID string
+		err := h.db.QueryRowContext(r.Context(), "SELECT id FROM clients WHERE owner_user_id = ? LIMIT 1", userID).Scan(&existingClientID)
+		if err == sql.ErrNoRows {
+			// 创建默认客户端
+			defaultClientID := uuid.New().String()
+			_, err := h.db.ExecContext(r.Context(), `
+				INSERT INTO clients (id, server_instance_id, owner_user_id, installation_instance_id, name, status)
+				VALUES (?, 'default', ?, ?, 'Default Client', 'bound')
+			`, defaultClientID, userID, uuid.New().String())
+			if err != nil {
+				h.logger.Error("failed to create default client", "err", err)
+				writeError(w, http.StatusInternalServerError, "failed to create default client")
+				return
+			}
+			clientID = defaultClientID
+		} else if err != nil {
+			h.logger.Error("failed to find client", "err", err)
+			writeError(w, http.StatusInternalServerError, "failed to find client")
+			return
+		} else {
+			clientID = existingClientID
+		}
+	}
 	_, err := h.db.ExecContext(r.Context(), `
 		INSERT INTO mappings (id, user_id, client_id, name, proxy_type, local_ip, local_port)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
-	`, id, userID, nullString(req.DeviceID), req.Name, req.Protocol, req.LocalIP, req.LocalPort)
+	`, id, userID, clientID, req.Name, req.Protocol, req.LocalIP, req.LocalPort)
 	if err != nil {
 		h.logger.Error("failed to create mapping", "err", err)
 		writeError(w, http.StatusInternalServerError, "failed to create mapping")
@@ -131,9 +157,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	// 创建端口租约
 	if remotePort > 0 {
 		_, _ = h.db.ExecContext(r.Context(), `
-			INSERT OR REPLACE INTO port_leases (port, mapping_id, user_id, lease_type)
-			VALUES (?, ?, ?, 'active')
-		`, remotePort, id, userID)
+			INSERT OR REPLACE INTO port_leases (id, server_id, mapping_id, remote_port, lease_role)
+			VALUES (?, 'default', ?, ?, 'active')
+		`, uuid.New().String(), id, remotePort)
 	}
 
 	h.audit.Log(r.Context(), audit.Entry{
@@ -407,7 +433,7 @@ func (h *Handler) getByID(ctx context.Context, id string) (*Mapping, error) {
 // 从 10000 开始查找未被占用的端口。
 func (h *Handler) allocatePort(ctx context.Context, userID string) (int, error) {
 	// 查找所有已分配的端口
-	rows, err := h.db.QueryContext(ctx, "SELECT port FROM port_leases ORDER BY port")
+	rows, err := h.db.QueryContext(ctx, "SELECT remote_port FROM port_leases ORDER BY remote_port")
 	if err != nil {
 		return 0, err
 	}
