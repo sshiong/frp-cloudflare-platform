@@ -566,7 +566,11 @@ func handleAuditLogs(auditLog *audit.Logger) http.HandlerFunc {
 		}
 		result, err := auditLog.QueryLogs(r.Context(), q)
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to query audit logs")
+			// 返回空列表而不是错误
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"entries": []interface{}{},
+				"total":   0,
+			})
 			return
 		}
 		writeJSON(w, http.StatusOK, result)

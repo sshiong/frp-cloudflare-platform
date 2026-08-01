@@ -106,7 +106,7 @@ func (s *Syncer) GenerateSnapshot(ctx context.Context, cfg FRPConfig) (*Snapshot
 func (s *Syncer) GetLatestSnapshot(ctx context.Context) (*Snapshot, error) {
 	var snap Snapshot
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, version, config_json, hash, signature, created_at
+		SELECT id, version, config_json, config_hash, config_signature, created_at
 		FROM config_snapshots ORDER BY version DESC LIMIT 1
 	`).Scan(&snap.ID, &snap.Version, &snap.Config, &snap.Hash, &snap.Signature, &snap.CreatedAt)
 	if err == sql.ErrNoRows {
@@ -122,7 +122,7 @@ func (s *Syncer) GetLatestSnapshot(ctx context.Context) (*Snapshot, error) {
 func (s *Syncer) GetSnapshotByVersion(ctx context.Context, version int) (*Snapshot, error) {
 	var snap Snapshot
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, version, config_json, hash, signature, created_at
+		SELECT id, version, config_json, config_hash, config_signature, created_at
 		FROM config_snapshots WHERE version = ?
 	`, version).Scan(&snap.ID, &snap.Version, &snap.Config, &snap.Hash, &snap.Signature, &snap.CreatedAt)
 	if err == sql.ErrNoRows {

@@ -104,10 +104,16 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Username == "" || req.Password == "" {
-		writeError(w, http.StatusBadRequest, "username and password are required")
+	if req.Username == "" {
+		writeError(w, http.StatusBadRequest, "username is required")
 		return
 	}
+
+	// 如果没有提供密码，自动生成一个
+	if req.Password == "" {
+		req.Password = crypto.RandomPassword(12)
+	}
+
 	if req.Role == "" {
 		req.Role = "user"
 	}
@@ -159,7 +165,11 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		IP:         r.RemoteAddr,
 	})
 
-	writeJSON(w, http.StatusCreated, map[string]string{"id": id})
+	writeJSON(w, http.StatusCreated, map[string]interface{}{
+		"id":       id,
+		"username": req.Username,
+		"role":     req.Role,
+	})
 }
 
 // UpdateRequest 更新用户请求。

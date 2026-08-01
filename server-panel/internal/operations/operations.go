@@ -196,7 +196,7 @@ func (m *Manager) ListByUser(ctx context.Context, userID string, limit, offset i
 	}
 
 	rows, err := m.db.QueryContext(ctx, `
-		SELECT id, user_id, op_type, target_id, target_type, state, phase, progress, error, metadata, created_at, updated_at
+		SELECT id, user_id, operation_type, resource_id, resource_type, status, phase, COALESCE(error_message,''), created_at, updated_at
 		FROM operations WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?
 	`, userID, limit, offset)
 	if err != nil {
@@ -207,13 +207,10 @@ func (m *Manager) ListByUser(ctx context.Context, userID string, limit, offset i
 	var ops []Operation
 	for rows.Next() {
 		var op Operation
-		var metaJSON string
 		if err := rows.Scan(&op.ID, &op.UserID, &op.OpType, &op.TargetID, &op.TargetType,
-			&op.State, &op.Phase, &op.Progress, &op.Error, &metaJSON, &op.CreatedAt, &op.UpdatedAt); err != nil {
+			&op.State, &op.Phase, &op.Error, &op.CreatedAt, &op.UpdatedAt); err != nil {
 			return nil, 0, err
 		}
-		op.Metadata = make(map[string]interface{})
-		_ = json.Unmarshal([]byte(metaJSON), &op.Metadata)
 		ops = append(ops, op)
 	}
 	return ops, total, nil

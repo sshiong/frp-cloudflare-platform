@@ -149,7 +149,7 @@ func (l *Logger) QueryLogs(ctx context.Context, q Query) (Result, error) {
 	var args []interface{}
 
 	if q.UserID != "" {
-		conditions = append(conditions, "user_id = ?")
+		conditions = append(conditions, "actor_id = ?")
 		args = append(args, q.UserID)
 	}
 	if q.Action != "" {
@@ -157,7 +157,7 @@ func (l *Logger) QueryLogs(ctx context.Context, q Query) (Result, error) {
 		args = append(args, q.Action)
 	}
 	if q.TargetType != "" {
-		conditions = append(conditions, "target_type = ?")
+		conditions = append(conditions, "resource_type = ?")
 		args = append(args, q.TargetType)
 	}
 	if !q.Since.IsZero() {
@@ -182,8 +182,8 @@ func (l *Logger) QueryLogs(ctx context.Context, q Query) (Result, error) {
 	}
 
 	// 查询数据
-	dataQuery := "SELECT id, request_id, user_id, action, target_type, target_id, detail, ip, created_at FROM audit_logs " +
-		where + " ORDER BY id DESC LIMIT ? OFFSET ?"
+	dataQuery := "SELECT id, COALESCE(request_id,''), actor_id, action, COALESCE(resource_type,''), COALESCE(resource_id,''), COALESCE(metadata_json,'{}'), COALESCE(browser_source_ip,''), created_at FROM audit_logs " +
+		where + " ORDER BY created_at DESC LIMIT ? OFFSET ?"
 	dataArgs := append(args, q.Limit, q.Offset)
 
 	rows, err := l.db.QueryContext(ctx, dataQuery, dataArgs...)
@@ -195,9 +195,11 @@ func (l *Logger) QueryLogs(ctx context.Context, q Query) (Result, error) {
 	var entries []AuditEntry
 	for rows.Next() {
 		var e AuditEntry
-		if err := rows.Scan(&e.ID, &e.RequestID, &e.UserID, &e.Action, &e.TargetType, &e.TargetID, &e.Detail, &e.IP, &e.CreatedAt); err != nil {
+		var detailStr string
+		if err := rows.Scan(&e.ID, &e.RequestID, &e.UserID, &e.Action, &e.TargetType, &e.TargetID, &detailStr, &e.IP, &e.CreatedAt); err != nil {
 			return Result{}, err
 		}
+		e.Detail = detailStr
 		entries = append(entries, e)
 	}
 
