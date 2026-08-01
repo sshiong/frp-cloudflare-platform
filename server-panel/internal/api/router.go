@@ -69,6 +69,14 @@ func NewRouter(deps Deps) *chi.Mux {
 	// 日志中间件
 	r.Use(loggingMiddleware(deps.Logger))
 
+	// 健康检查端点 (无需认证)
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"status":    "ok",
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+		})
+	})
+
 	// API 路由组
 	r.Route("/api/v1", func(r chi.Router) {
 		// --- 公开路由 ---
