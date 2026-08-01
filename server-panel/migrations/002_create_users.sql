@@ -4,7 +4,7 @@
 CREATE TABLE IF NOT EXISTS users (
     id          TEXT PRIMARY KEY,
     username    TEXT NOT NULL UNIQUE,
-    password_hash    TEXT NOT NULL,
+    password    TEXT NOT NULL,
     role             TEXT NOT NULL CHECK (role IN ('admin', 'user')),
     status           TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'disabled')),
     must_change_password INTEGER NOT NULL DEFAULT 1 CHECK (must_change_password IN (0, 1)),

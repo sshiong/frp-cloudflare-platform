@@ -7,3 +7,10 @@ CREATE TABLE IF NOT EXISTS system_identity (
     created_at             TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
     restored_from_backup_at TEXT
 );
+
+-- System configuration key-value store
+CREATE TABLE IF NOT EXISTS system_config (
+    key        TEXT PRIMARY KEY,
+    value      TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
