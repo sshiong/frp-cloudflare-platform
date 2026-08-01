@@ -9,6 +9,8 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -213,6 +215,30 @@ func (s *Server) buildRouter() *chi.Mux {
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
+
+	// 静态文件服务 (前端)
+	frontendDir := filepath.Join(".", "web-client", "dist")
+	if _, err := os.Stat(frontendDir); err == nil {
+		fs := http.FileServer(http.Dir(frontendDir))
+		r.Handle("/*", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// 如果是API请求，跳过
+			if len(r.URL.Path) > 4 && r.URL.Path[:5] == "/api/" {
+				http.NotFound(w, r)
+				return
+			}
+			// 尝试提供静态文件
+			path := filepath.Join(frontendDir, r.URL.Path)
+			if _, err := os.Stat(path); os.IsNotExist(err) {
+				// SPA路由返回index.html
+				http.ServeFile(w, r, filepath.Join(frontendDir, "index.html"))
+				return
+			}
+			fs.ServeHTTP(w, r)
+		}))
+		s.logger.Info("前端静态文件已加载", "dir", frontendDir)
+	} else {
+		s.logger.Warn("前端目录不存在，仅提供API", "dir", frontendDir)
+	}
 
 	return r
 }

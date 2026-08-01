@@ -186,6 +186,31 @@ func main() {
 		CSRFKey:    csrfKey,
 	})
 
+	// --- 静态文件服务 (前端) ---
+	frontendDir := filepath.Join(".", "web-admin", "dist")
+	if _, err := os.Stat(frontendDir); err == nil {
+		// 服务静态文件
+		fs := http.FileServer(http.Dir(frontendDir))
+		router.Handle("/*", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// 如果是API请求，跳过静态文件服务
+			if len(r.URL.Path) > 4 && r.URL.Path[:5] == "/api/" {
+				http.NotFound(w, r)
+				return
+			}
+			// 尝试提供静态文件
+			path := filepath.Join(frontendDir, r.URL.Path)
+			if _, err := os.Stat(path); os.IsNotExist(err) {
+				// 对于SPA路由，返回index.html
+				http.ServeFile(w, r, filepath.Join(frontendDir, "index.html"))
+				return
+			}
+			fs.ServeHTTP(w, r)
+		}))
+		logger.Info("serving frontend", "dir", frontendDir)
+	} else {
+		logger.Warn("frontend directory not found, serving API only", "dir", frontendDir)
+	}
+
 	// --- HTTP 服务器 ---
 	addr := fmt.Sprintf(":%d", *port)
 	if *devMode {
