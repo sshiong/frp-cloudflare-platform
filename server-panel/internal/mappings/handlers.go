@@ -30,21 +30,23 @@ func NewHandler(db *sql.DB, logger *slog.Logger, auditLog *audit.Logger) *Handle
 
 // Mapping 映射实体。
 type Mapping struct {
-	ID           string `json:"id"`
-	UserID       string `json:"user_id"`
-	DeviceID     string `json:"device_id,omitempty"`
-	Name         string `json:"name"`
-	Protocol     string `json:"protocol"`
-	LocalIP      string `json:"local_ip"`
-	LocalPort    int    `json:"local_port"`
-	RemotePort   int    `json:"remote_port,omitempty"`
-	CustomDomain string `json:"custom_domain,omitempty"`
-	ProxyName    string `json:"proxy_name"`
-	ConfigVersion int   `json:"config_version"`
-	Enabled      bool   `json:"enabled"`
-	Status       string `json:"status"`
-	CreatedAt    string `json:"created_at"`
-	UpdatedAt    string `json:"updated_at"`
+	ID            string `json:"id"`
+	UserID        string `json:"user_id"`
+	DeviceID      string `json:"device_id,omitempty"`
+	Name          string `json:"name"`
+	Protocol      string `json:"protocol"`
+	LocalIP       string `json:"local_ip"`
+	LocalPort     int    `json:"local_port"`
+	RemotePort    int    `json:"remote_port,omitempty"`
+	CustomDomain  string `json:"custom_domain,omitempty"`
+	ProxyName     string `json:"proxy_name"`
+	ConfigVersion int    `json:"config_version"`
+	Enabled       bool   `json:"enabled"`
+	Status        string `json:"status"`
+	DesiredState  string `json:"desired_state"`
+	ObservedState string `json:"observed_state,omitempty"`
+	CreatedAt     string `json:"created_at"`
+	UpdatedAt     string `json:"updated_at"`
 }
 
 // CreateRequest 创建映射请求。
@@ -117,10 +119,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	id := uuid.New().String()
 	_, err := h.db.ExecContext(r.Context(), `
-		INSERT INTO mappings (id, user_id, device_id, name, protocol, local_ip, local_port, remote_port, custom_domain, proxy_name)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, id, userID, nullString(req.DeviceID), req.Name, req.Protocol, req.LocalIP, req.LocalPort,
-		nullInt(remotePort), nullString(req.CustomDomain), proxyName)
+		INSERT INTO mappings (id, user_id, client_id, name, proxy_type, local_ip, local_port)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	`, id, userID, nullString(req.DeviceID), req.Name, req.Protocol, req.LocalIP, req.LocalPort)
 	if err != nil {
 		h.logger.Error("failed to create mapping", "err", err)
 		writeError(w, http.StatusInternalServerError, "failed to create mapping")
@@ -186,9 +187,9 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserIDFromContext(r.Context())
 	role := auth.GetUserRoleFromContext(r.Context())
 
-	query := `SELECT id, user_id, COALESCE(device_id,''), name, protocol, local_ip, local_port,
-		COALESCE(remote_port,0), COALESCE(custom_domain,''), COALESCE(proxy_name,''),
-		config_version, enabled, status, created_at, updated_at
+	query := `SELECT id, user_id, COALESCE(client_id,''), name, proxy_type, local_ip, local_port,
+		COALESCE(lifecycle_status,''), COALESCE(desired_state,''), COALESCE(observed_state,''),
+		active_revision, created_at, updated_at
 		FROM mappings`
 	var args []interface{}
 
@@ -208,13 +209,12 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	var mappings []Mapping
 	for rows.Next() {
 		var m Mapping
-		var enabled int
 		if err := rows.Scan(&m.ID, &m.UserID, &m.DeviceID, &m.Name, &m.Protocol, &m.LocalIP, &m.LocalPort,
-			&m.RemotePort, &m.CustomDomain, &m.ProxyName, &m.ConfigVersion, &enabled, &m.Status, &m.CreatedAt, &m.UpdatedAt); err != nil {
+			&m.Status, &m.DesiredState, &m.ObservedState, &m.ConfigVersion, &m.CreatedAt, &m.UpdatedAt); err != nil {
 			writeError(w, http.StatusInternalServerError, "failed to scan mapping")
 			return
 		}
-		m.Enabled = enabled == 1
+		m.Enabled = m.DesiredState == "enabled"
 		mappings = append(mappings, m)
 	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{"mappings": mappings})
