@@ -51,8 +51,8 @@ func (l *Logger) Log(ctx context.Context, entry Entry) {
 	}
 
 	_, err = l.db.ExecContext(ctx, `
-		INSERT INTO audit_logs (request_id, user_id, action, target_type, target_id, detail, ip)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO audit_logs (request_id, actor_type, actor_id, action, resource_type, resource_id, result, metadata_json, browser_source_ip)
+		VALUES (?, 'user', ?, ?, ?, ?, 'success', ?, ?)
 	`, entry.RequestID, entry.UserID, entry.Action, entry.TargetType, entry.TargetID,
 		string(detailJSON), entry.IP)
 

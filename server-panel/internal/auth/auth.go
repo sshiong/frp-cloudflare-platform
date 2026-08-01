@@ -246,17 +246,17 @@ func (a *Authenticator) RequireDeviceHMAC(next http.Handler) http.Handler {
 // Login 验证用户名和密码，返回用户信息。
 func (a *Authenticator) Login(ctx context.Context, username, password string) (userID, role string, err error) {
 	var storedHash string
-	var enabled int
+	var status string
 	err = a.db.QueryRowContext(ctx, `
-		SELECT id, password, role, enabled FROM users WHERE username = ?
-	`, username).Scan(&userID, &storedHash, &role, &enabled)
+		SELECT id, password, role, status FROM users WHERE username = ?
+	`, username).Scan(&userID, &storedHash, &role, &status)
 	if err == sql.ErrNoRows {
 		return "", "", fmt.Errorf("invalid credentials")
 	}
 	if err != nil {
 		return "", "", fmt.Errorf("query user: %w", err)
 	}
-	if enabled == 0 {
+	if status != "active" {
 		return "", "", fmt.Errorf("account disabled")
 	}
 

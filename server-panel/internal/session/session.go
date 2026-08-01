@@ -75,31 +75,34 @@ type Session struct {
 // Create 创建新会话。
 // 如果同一 client_id 已有活跃会话，会先注销旧会话（单点登录）。
 func (m *Manager) Create(ctx context.Context, userID, clientID, ip, userAgent string) (*Session, error) {
-	// 删除同一 client_id 的所有旧会话
+	// 撤销同一 client_id 的所有旧会话
 	if _, err := m.db.ExecContext(ctx, `
-		DELETE FROM sessions WHERE client_id = ?
+		UPDATE sessions SET revoked_at = datetime('now'), revoke_reason = 'new_login'
+		WHERE client_id = ? AND revoked_at IS NULL
 	`, clientID); err != nil {
-		return nil, fmt.Errorf("delete old sessions: %w", err)
+		return nil, fmt.Errorf("revoke old sessions: %w", err)
 	}
 
 	// 获取当前代次
 	var gen int
 	if err := m.db.QueryRowContext(ctx, `
-		SELECT COALESCE(MAX(generation), 0) FROM sessions WHERE client_id = ?
+		SELECT COALESCE(MAX(session_generation), 0) FROM sessions WHERE client_id = ?
 	`, clientID).Scan(&gen); err != nil {
-		// 如果没有旧记录，代次从 1 开始
 		gen = 0
 	}
 	gen++
 
 	id := crypto.RandomToken(32)
+	sessionHash := crypto.RandomToken(32)
+	csrfSecretHash := crypto.RandomToken(32)
 	now := time.Now().UTC()
 	expires := now.Add(m.ttl)
+	idleExpires := now.Add(30 * time.Minute)
 
 	if _, err := m.db.ExecContext(ctx, `
-		INSERT INTO sessions (id, user_id, client_id, generation, ip, user_agent, created_at, expires_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`, id, userID, clientID, gen, ip, userAgent, now.Format(time.RFC3339), expires.Format(time.RFC3339)); err != nil {
+		INSERT INTO sessions (id, user_id, client_id, session_hash, csrf_secret_hash, session_generation, browser_source_ip, user_agent, expires_at, idle_expires_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, id, userID, clientID, sessionHash, csrfSecretHash, gen, ip, userAgent, expires.Format(time.RFC3339), idleExpires.Format(time.RFC3339)); err != nil {
 		return nil, fmt.Errorf("insert session: %w", err)
 	}
 
@@ -119,8 +122,8 @@ func (m *Manager) Create(ctx context.Context, userID, clientID, ip, userAgent st
 func (m *Manager) Validate(ctx context.Context, sessionID string) (*Session, error) {
 	var s Session
 	err := m.db.QueryRowContext(ctx, `
-		SELECT id, user_id, client_id, generation, ip, user_agent, created_at, expires_at
-		FROM sessions WHERE id = ?
+		SELECT id, user_id, client_id, session_generation, browser_source_ip, user_agent, created_at, expires_at
+		FROM sessions WHERE id = ? AND revoked_at IS NULL
 	`, sessionID).Scan(&s.ID, &s.UserID, &s.ClientID, &s.Generation, &s.IP, &s.UserAgent, &s.CreatedAt, &s.ExpiresAt)
 
 	if err == sql.ErrNoRows {
@@ -166,7 +169,7 @@ func (m *Manager) RevokeAllForClient(ctx context.Context, clientID string) error
 func (m *Manager) GetGeneration(ctx context.Context, clientID string) (int, error) {
 	var gen int
 	err := m.db.QueryRowContext(ctx, `
-		SELECT COALESCE(MAX(generation), 0) FROM sessions WHERE client_id = ?
+		SELECT COALESCE(MAX(session_generation), 0) FROM sessions WHERE client_id = ?
 	`, clientID).Scan(&gen)
 	return gen, err
 }

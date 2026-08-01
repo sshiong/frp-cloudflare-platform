@@ -41,7 +41,7 @@ type User struct {
 // List 列出所有用户（管理员）。
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	rows, err := h.db.QueryContext(r.Context(), `
-		SELECT id, username, role, enabled, created_at, updated_at
+		SELECT id, username, role, status, created_at, updated_at
 		FROM users ORDER BY created_at DESC
 	`)
 	if err != nil {
@@ -53,12 +53,12 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	var users []User
 	for rows.Next() {
 		var u User
-		var enabled int
-		if err := rows.Scan(&u.ID, &u.Username, &u.Role, &enabled, &u.CreatedAt, &u.UpdatedAt); err != nil {
+		var status string
+		if err := rows.Scan(&u.ID, &u.Username, &u.Role, &status, &u.CreatedAt, &u.UpdatedAt); err != nil {
 			writeError(w, http.StatusInternalServerError, "failed to scan user")
 			return
 		}
-		u.Enabled = enabled == 1
+		u.Enabled = status == "active"
 		users = append(users, u)
 	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{"users": users})
@@ -72,11 +72,11 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var u User
-	var enabled int
+	var status string
 	err := h.db.QueryRowContext(r.Context(), `
-		SELECT id, username, role, enabled, created_at, updated_at
+		SELECT id, username, role, status, created_at, updated_at
 		FROM users WHERE id = ?
-	`, userID).Scan(&u.ID, &u.Username, &u.Role, &enabled, &u.CreatedAt, &u.UpdatedAt)
+	`, userID).Scan(&u.ID, &u.Username, &u.Role, &status, &u.CreatedAt, &u.UpdatedAt)
 	if err == sql.ErrNoRows {
 		writeError(w, http.StatusNotFound, "user not found")
 		return
@@ -85,7 +85,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "failed to get user")
 		return
 	}
-	u.Enabled = enabled == 1
+	u.Enabled = status == "active"
 	writeJSON(w, http.StatusOK, u)
 }
 
