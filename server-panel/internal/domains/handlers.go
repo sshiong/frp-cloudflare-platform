@@ -92,10 +92,39 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := uuid.New().String()
-	clientID := "default" // TODO: 从请求或session获取
-	mappingID := req.MappingID
-	if mappingID == "" {
+
+	// 查找用户的第一个客户端
+	var clientID string
+	err = h.db.QueryRowContext(r.Context(), "SELECT id FROM clients WHERE owner_user_id = ? LIMIT 1", userID).Scan(&clientID)
+	if err != nil {
+		// 创建默认客户端
+		clientID = uuid.New().String()
+		_, err = h.db.ExecContext(r.Context(), `
+			INSERT INTO clients (id, server_instance_id, owner_user_id, installation_instance_id, name, status)
+			VALUES (?, 'default', ?, ?, 'Default Client', 'bound')
+		`, clientID, userID, uuid.New().String())
+		if err != nil {
+			h.logger.Error("failed to create default client", "err", err)
+			writeError(w, http.StatusInternalServerError, "failed to create default client")
+			return
+		}
+	}
+
+	// 查找用户的第一个映射
+	var mappingID string
+	err = h.db.QueryRowContext(r.Context(), "SELECT id FROM mappings WHERE user_id = ? LIMIT 1", userID).Scan(&mappingID)
+	if err != nil {
+		// 创建默认映射
 		mappingID = uuid.New().String()
+		_, err = h.db.ExecContext(r.Context(), `
+			INSERT INTO mappings (id, user_id, client_id, name, proxy_type, local_ip, local_port)
+			VALUES (?, ?, ?, 'Default Mapping', 'http', '127.0.0.1', 8080)
+		`, mappingID, userID, clientID)
+		if err != nil {
+			h.logger.Error("failed to create default mapping", "err", err)
+			writeError(w, http.StatusInternalServerError, "failed to create default mapping")
+			return
+		}
 	}
 
 	_, err = h.db.ExecContext(r.Context(), `
