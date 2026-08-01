@@ -272,9 +272,9 @@ export interface SystemInfo {
 
 export interface SystemSettings {
   server_name: string
-  server_address: string
-  server_port: number
-  dashboard_port: number
+  frps_port: number
+  http_port: number
+  https_port: number
   max_users: number
   max_mappings_per_user: number
   default_bandwidth_limit: number

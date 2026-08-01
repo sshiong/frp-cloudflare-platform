@@ -24,16 +24,19 @@
             <el-input v-model="settings.server_name" placeholder="FRP 云隧道服务器" />
           </el-form-item>
 
-          <el-form-item label="服务器地址" prop="server_address">
-            <el-input v-model="settings.server_address" placeholder="frp.example.com" />
+          <el-form-item label="FRPS 端口" prop="frps_port">
+            <el-input-number v-model="settings.frps_port" :min="1" :max="65535" />
+            <span class="form-tip">FRPC 连接端口 (默认 7000)</span>
           </el-form-item>
 
-          <el-form-item label="服务端口" prop="server_port">
-            <el-input-number v-model="settings.server_port" :min="1" :max="65535" />
+          <el-form-item label="HTTP 端口" prop="http_port">
+            <el-input-number v-model="settings.http_port" :min="1" :max="65535" />
+            <span class="form-tip">域名 HTTP 入口端口 (默认 80)</span>
           </el-form-item>
 
-          <el-form-item label="管理端口" prop="dashboard_port">
-            <el-input-number v-model="settings.dashboard_port" :min="1" :max="65535" />
+          <el-form-item label="HTTPS 端口" prop="https_port">
+            <el-input-number v-model="settings.https_port" :min="1" :max="65535" />
+            <span class="form-tip">域名 HTTPS 入口端口 (默认 443)</span>
           </el-form-item>
         </div>
 
@@ -98,9 +101,9 @@ const formRef = ref<FormInstance>()
 
 const settings = reactive<SystemSettings>({
   server_name: '',
-  server_address: '',
-  server_port: 7000,
-  dashboard_port: 9000,
+  frps_port: 7000,
+  http_port: 80,
+  https_port: 443,
   max_users: 0,
   max_mappings_per_user: 10,
   default_bandwidth_limit: 0,
@@ -110,9 +113,9 @@ const settings = reactive<SystemSettings>({
 
 const rules: FormRules = {
   server_name: [{ required: true, message: '请输入服务器名称', trigger: 'blur' }],
-  server_address: [{ required: true, message: '请输入服务器地址', trigger: 'blur' }],
-  server_port: [{ required: true, message: '请输入服务端口', trigger: 'blur' }],
-  dashboard_port: [{ required: true, message: '请输入管理端口', trigger: 'blur' }],
+  frps_port: [{ required: true, message: '请输入FRPS端口', trigger: 'blur' }],
+  http_port: [{ required: true, message: '请输入HTTP端口', trigger: 'blur' }],
+  https_port: [{ required: true, message: '请输入HTTPS端口', trigger: 'blur' }],
 }
 
 async function fetchSettings() {

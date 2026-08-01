@@ -70,7 +70,7 @@
               <el-form-item label="服务器地址">
                 <el-input
                   v-model="form.serverAddr"
-                  placeholder="例如：frp.example.com 或 192.168.1.100"
+                  placeholder="例如：frp.example.com 或 192.168.1.100:9000"
                   size="default"
                 >
                   <template #prepend>
@@ -79,21 +79,7 @@
                 </el-input>
                 <div class="form-help">
                   <el-icon><InfoFilled /></el-icon>
-                  <span>输入 FRP 服务器的域名或 IP 地址</span>
-                </div>
-              </el-form-item>
-
-              <el-form-item label="服务器端口">
-                <el-input-number
-                  v-model="form.serverPort"
-                  :min="1"
-                  :max="65535"
-                  size="default"
-                  style="width: 100%"
-                />
-                <div class="form-help">
-                  <el-icon><InfoFilled /></el-icon>
-                  <span>默认端口为 7000</span>
+                  <span>输入服务端地址，格式：域名 或 IP:端口</span>
                 </div>
               </el-form-item>
 
@@ -158,7 +144,6 @@ const form = reactive({
   username: '',
   password: '',
   serverAddr: localStorage.getItem('frp_server_addr') || '',
-  serverPort: 7000,
   remember: false,
 })
 
@@ -207,7 +192,6 @@ async function handleTestConnection() {
   try {
     const result = await serverApi.testConnection({
       addr: form.serverAddr,
-      port: form.serverPort,
     })
 
     if (result.success) {

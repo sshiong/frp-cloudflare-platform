@@ -41,20 +41,6 @@
           />
         </el-form-item>
 
-        <!-- Advanced Settings -->
-        <el-collapse v-model="showAdvanced" class="advanced-collapse">
-          <el-collapse-item title="高级设置" name="advanced">
-            <el-form-item label="服务器地址">
-              <el-input
-                v-model="form.serverAddress"
-                placeholder="默认: 当前域名"
-                prefix-icon="Link"
-                :disabled="loading"
-              />
-            </el-form-item>
-          </el-collapse-item>
-        </el-collapse>
-
         <el-form-item class="login-actions">
           <el-button
             type="primary"
@@ -89,12 +75,10 @@ const { error: showError, msgSuccess } = useNotification()
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
-const showAdvanced = ref<string[]>([])
 
 const form = reactive({
   username: '',
   password: '',
-  serverAddress: '',
 })
 
 const rules: FormRules = {
